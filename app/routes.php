@@ -16,7 +16,7 @@ Route::get('/', function()
 	return View::make('form');
 });
 
-Route::post('/',function(){
+Route::post('/', function(){
     // Form validation rules
     $rules = array(
         'link' => 'required|url'
@@ -25,7 +25,7 @@ Route::post('/',function(){
     $validation = Validator::make(Input::all(), $rules);
 
     // If validation fails, return to the main page with an error
-    if($validation->fails()) {
+    if ($validation->fails()) {
         return Redirect::to('/')
             ->withInput()
             ->withErrors($validation);
@@ -34,7 +34,7 @@ Route::post('/',function(){
         $link = Link::where('url', '=', Input::get('link'))->first();
 
         // If URL already in database, provide that information back to view
-        if($link) {
+        if ($link) {
             return Redirect::to('/')
                 ->withInput()
                 ->with('link', $link->shortcut);
@@ -46,13 +46,28 @@ Route::post('/',function(){
             } while(Link::where('shortcut', '=', $newShortcut)->count() > 0);
 
             //Now we create a new database record
-            Link::create(array('url' => Input::get('link'),'hash' => $newHash));
+            Link::create(array('url' => Input::get('link'), 'shortcut`' => $newShortcut));
 
             //And then we return the new shortened URL info to our action
             return Redirect::to('/')
                 ->withInput()
-                ->with('link',$newHash);
+                ->with('link',$newShortcut);
             }
         }
     }
 );
+
+Route::get('{hash}', function($hash) {
+    //First we check if the hash is from a URL from our database
+    $link = Link::where('shortcut', '=', $hash)
+        ->first();
+
+    //If found, we redirect to the URL
+    if($link) {
+        return Redirect::to($link->url);
+    //If not found, we redirect to index page with error message
+    } else {
+        return Redirect::to('/')
+            ->with('message','Invalid shortcut.');
+    }
+})->where('hash', '[0-9a-zA-Z]{6}');
